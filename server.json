@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.vitalsend/mcp",
+  "description": "Send files end-to-end encrypted from an AI agent; the model never sees the link or key.",
+  "repository": {
+    "url": "https://github.com/vitalsend/mcp",
+    "source": "github",
+    "id": "1441821471"
+  },
+  "websiteUrl": "https://vitalsend.eu/mcp/",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@vitalsend/mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "VITALSEND_API_KEY",
+          "description": "API key for CI and scripts; without it you sign in through the browser",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "VITALSEND_ROOT",
+          "description": "Folder the tool may read from, for clients that do not share roots",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

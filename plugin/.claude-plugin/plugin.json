@@ -1,0 +1,13 @@
+{
+  "name": "vitalsend",
+  "displayName": "VitalSend",
+  "description": "Send a file end-to-end encrypted from your agent. The model never sees the link, its key or the password.",
+  "author": {
+    "name": "VitalSend",
+    "url": "https://vitalsend.eu"
+  },
+  "homepage": "https://vitalsend.eu/mcp/",
+  "repository": "https://github.com/vitalsend/mcp",
+  "license": "AGPL-3.0-or-later",
+  "keywords": ["file-transfer", "encryption", "mcp"]
+}

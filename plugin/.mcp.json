@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vitalsend": {
+      "command": "npx",
+      "args": ["-y", "@vitalsend/mcp"]
+    }
+  }
+}

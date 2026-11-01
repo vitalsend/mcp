@@ -1,0 +1,52 @@
+{
+  "name": "@vitalsend/mcp",
+  "version": "0.1.0",
+  "description": "Send files end-to-end encrypted through VitalSend from an AI agent. The link key, the password and your login never reach the model.",
+  "mcpName": "io.github.vitalsend/mcp",
+  "homepage": "https://vitalsend.eu/mcp/",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "encryption",
+    "e2ee",
+    "file-transfer",
+    "vitalsend"
+  ],
+  "type": "module",
+  "bin": {
+    "vitalsend-mcp": "dist/vitalsend-mcp.js"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "npm-shrinkwrap.json",
+    "server.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "AGPL-3.0-or-later",
+  "author": "Jörgen Karlsson <jorgen@karlsson.com> (https://vitalsend.eu)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vitalsend/mcp"
+  },
+  "scripts": {
+    "sync-vendor": "node sync-vendor.mjs",
+    "pretest": "node sync-vendor.mjs",
+    "test": "vitest run",
+    "prebuild": "node sync-vendor.mjs",
+    "build": "node build.mjs",
+    "prepublishOnly": "npm test && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "libsodium-wrappers-sumo": "0.7.15",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "vitest": "^4.1.8"
+  }
+}

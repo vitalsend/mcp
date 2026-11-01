@@ -1,0 +1,15 @@
+{
+  "name": "vitalsend",
+  "description": "VitalSend for Claude Code",
+  "owner": {
+    "name": "VitalSend",
+    "url": "https://vitalsend.eu"
+  },
+  "plugins": [
+    {
+      "name": "vitalsend",
+      "source": "./plugin",
+      "description": "Send a file end-to-end encrypted from your agent. The model never sees the link, its key or the password."
+    }
+  ]
+}
