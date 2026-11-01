@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect, afterEach } from 'vitest';
 import { request } from 'node:http';
+import { JSDOM } from 'jsdom';
 import { openDeliveryPage } from '../src/delivery-page.js';
 
 const LINK = 'https://vitalsend.eu/download/?file=VS11abc#k=secretkey&p=1';
@@ -179,5 +180,37 @@ describe('delivery page', () => {
     const p = await openDeliveryPage({ openBrowser: async () => { throw new Error('spawn xdg-open ENOENT'); }, timeoutMs: 1000 });
     await expect(p.open()).rejects.toMatchObject({ name: 'BrowserUnavailable' });
     p.close();
+  });
+
+  it('keeps the share buttons clickable across polls, and Copy copies and says so', async () => {
+    await open();
+    const shown = page.showPassword(PASSWORD);
+    await settle();
+    const res = await load();
+    const copied = [];
+    const dom = new JSDOM(res.body, {
+      url: opened[0],
+      runScripts: 'dangerously',
+      beforeParse(window) {
+        window.fetch = async (path, init = {}) => {
+          const r = await raw(new URL(path, opened[0]).href, { method: init.method, headers: { ...(init.headers || {}), Cookie: cookie, Origin: new URL(opened[0]).origin }, body: init.body });
+          return { json: async () => JSON.parse(r.body) };
+        };
+        Object.defineProperty(window.navigator, 'clipboard', { value: { writeText: async (t) => { copied.push(t); } } });
+      },
+    });
+    const copyButton = () => [...dom.window.document.querySelectorAll('#p-share button')].find((b) => b.textContent.includes('Copy') || b.textContent.includes('Done'));
+    await new Promise((r) => setTimeout(r, 300));
+    const first = copyButton();
+    expect(first).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 2200));
+    expect(copyButton()).toBe(first);
+    first.click();
+    await settle();
+    expect(copied).toEqual([PASSWORD]);
+    expect(first.textContent).toContain('Done');
+    dom.window.close();
+    await act('saved');
+    expect(await shown).toBe('saved');
   });
 });

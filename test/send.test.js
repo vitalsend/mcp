@@ -145,7 +145,7 @@ describe('sendFile', () => {
     const cwd = await project();
     const { deps } = world({ mode: 'none' });
     const out = await sendFile({ path: 'report.pdf', recipient_email: 'a@x.se' }, { ...deps, cwd });
-    expect(deps.io.openLogin).toHaveBeenCalledWith('https://vitalsend.eu/oauth/authorize/?x');
+    expect(deps.io.openLogin).toHaveBeenCalledWith('https://vitalsend.eu/oauth/authorize/?x', expect.objectContaining({ done: expect.any(Promise) }));
     expect(deps.credentials.adopt).toHaveBeenCalled();
     expect(out.isError).toBeFalsy();
   });
@@ -217,5 +217,51 @@ describe('sendFile', () => {
     process.off('unhandledRejection', unhandled);
     expect(out.isError).toBe(false);
     expect(unhandled).not.toHaveBeenCalled();
+  });
+
+  describe('with client dialogs', () => {
+    const dialogs = (w, { confirm = 'send', link = 'accept' } = {}) => {
+      w.deps.io.canShowSecrets = true;
+      w.deps.io.confirm = vi.fn(async () => confirm);
+      w.deps.io.showLink = vi.fn(async () => link);
+      return w;
+    };
+
+    it('shows the password in the confirmation and uses that password, with no browser page', async () => {
+      const cwd = await project();
+      const w = dialogs(world());
+      const out = await sendFile({ path: 'report.pdf', recipient_email: 'kalle@example.com' }, { ...w.deps, cwd });
+      expect(out.isError).toBeFalsy();
+      const shown = w.deps.io.confirm.mock.calls[0][0].password;
+      expect(shown).toMatch(/\S{6,}/);
+      expect(w.calls.find((c) => c[0] === 'upload')[1].password).toBe(shown);
+      expect(w.calls.find((c) => c[0] === 'reserve')[1].passwordVerifier).not.toBe('');
+      expect(w.deps.openPage).not.toHaveBeenCalled();
+      expect(out.text).not.toContain(shown);
+      expectNoSecrets(out.text, w.calls);
+    });
+
+    it('a declined dialog reserves nothing', async () => {
+      const cwd = await project();
+      const w = dialogs(world(), { confirm: 'cancel' });
+      const out = await sendFile({ path: 'report.pdf', recipient_email: 'kalle@example.com' }, { ...w.deps, cwd });
+      expect(out.isError).toBe(true);
+      expect(w.calls.find((c) => c[0] === 'reserve')).toBeUndefined();
+      expect(w.deps.openPage).not.toHaveBeenCalled();
+    });
+
+    it('without a recipient the link is shown in a dialog, and on the page if the dialog is not accepted', async () => {
+      const cwd = await project();
+      const w = dialogs(world());
+      const out = await sendFile({ path: 'report.pdf' }, { ...w.deps, cwd });
+      expect(out.isError).toBeFalsy();
+      expect(w.deps.io.showLink.mock.calls[0][0].startsWith(LINK_BASE + '#k=')).toBe(true);
+      expect(w.deps.openPage).not.toHaveBeenCalled();
+      expectNoSecrets(out.text, w.calls);
+
+      const w2 = dialogs(world(), { link: 'cancel' });
+      await sendFile({ path: 'report.pdf' }, { ...w2.deps, cwd });
+      expect(w2.page.showLink).toHaveBeenCalled();
+    });
   });
 });

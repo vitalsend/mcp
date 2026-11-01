@@ -66,7 +66,7 @@ export async function sendFile(input, deps) {
     } catch (err) {
       if (!(err instanceof LoginRequired)) throw err;
       const login = await startLogin({ connectionName: clientName });
-      await io.openLogin(login.url);
+      await io.openLogin(login.url, login);
       accessToken = await credentials.adopt(await login.done);
     }
 
@@ -74,21 +74,25 @@ export async function sendFile(input, deps) {
     await session.init();
     const { creditsNeeded } = await session.quote({ sizeBytes, password: withPassword, recipient });
 
+    const password = withPassword ? generatePassword() : null;
+    // A client that can show secrets in its own dialogs gets the password in
+    // the confirmation and no browser page; others get the local page.
+    const inDialogs = mode !== 'api_key' && !!io.canShowSecrets;
     if (mode !== 'api_key') {
-      const details = { recipient, name, sizeBytes, credits: creditsNeeded };
+      const details = { recipient, name, sizeBytes, size: formatSize(sizeBytes), credits: creditsNeeded, password: inDialogs ? password : null };
       let decision = await io.confirm(details);
       if (decision === 'unavailable') decision = await (await getPage()).confirm(details);
       if (decision !== 'send') return fail('The send was cancelled.');
     }
 
-    // The page is where the password and the link reach the user, so its
-    // browser must open before anything is reserved or spent.
-    if (mode !== 'api_key') await (await getPage()).open();
-
-    const password = withPassword ? generatePassword() : null;
-    if (password) {
-      const shown = await (await getPage()).showPassword(password);
-      if (shown !== 'saved') return fail('The password was not confirmed in the browser, so nothing was sent and no credits were used.');
+    if (mode !== 'api_key' && !inDialogs) {
+      // The page is where the password and the link reach the user, so its
+      // browser must open before anything is reserved or spent.
+      await (await getPage()).open();
+      if (password) {
+        const shown = await (await getPage()).showPassword(password);
+        if (shown !== 'saved') return fail('The password was not confirmed in the browser, so nothing was sent and no credits were used.');
+      }
     }
 
     const linkKey = new Uint8Array(randomBytes(32));
@@ -115,7 +119,9 @@ export async function sendFile(input, deps) {
       }
     }
 
-    if (mode !== 'api_key') {
+    let linkShown = emailed || mode === 'api_key';
+    if (!linkShown && inDialogs) linkShown = (await io.showLink(link, { password: !!password }).catch(() => 'cancel')) === 'accept';
+    if (mode !== 'api_key' && (!inDialogs || !linkShown)) {
       const p = await getPage();
       pageHandedOff = true;
       p.showLink({ link, emailedTo: emailed ? recipient : '' }).catch(() => {}).finally(() => p.close());
@@ -126,11 +132,11 @@ export async function sendFile(input, deps) {
       lines.push(`VitalSend emailed the download link to ${recipient}.`);
     } else {
       if (recipient) lines.push(`VitalSend could not email the link to ${recipient}.`);
-      lines.push('The download link is waiting in the user\'s browser to be shared; it was not given to you.');
+      lines.push(linkShown ? 'The download link was shown to the user to share; it was not given to you.' : 'The download link is waiting in the user\'s browser to be shared; it was not given to you.');
     }
     const expiry = formatExpiry(reserved.expiresAt);
     if (expiry) lines.push(`It can be downloaded once, until ${expiry}.`);
-    if (password) lines.push('A password was set and shown to the user in the browser. The recipient needs it; the user should send it another way than the link.');
+    if (password) lines.push('A password was set and shown to the user' + (inDialogs ? '' : ' in the browser') + '. The recipient needs it; the user should send it another way than the link.');
     lines.push(`Cost: ${creditsNeeded} credit${creditsNeeded === 1 ? '' : 's'}.`);
     return { isError: false, text: lines.join(' ') };
   } catch (err) {

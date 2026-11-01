@@ -7,12 +7,12 @@ import { z } from 'zod';
 import { sendFile } from './send.js';
 import { createIo } from './io.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
 const DESCRIPTION = `Send a file end-to-end encrypted through VitalSend. The file is encrypted on this computer; \
 the recipient can download it once. With recipient_email, VitalSend emails the download link; without it, the link \
-appears in the user's browser for the user to share. You never see the link, its key or the password. By default a \
-password is set and shown to the user in the browser. Each send is confirmed by the user first.`;
+is shown to the user to share. You never see the link, its key or the password. By default a password is set and \
+shown to the user, who sends it to the recipient another way. Each send is confirmed by the user first.`;
 
 export function buildServer({ sendFileDeps, openBrowser }) {
   const server = new McpServer({ name: 'vitalsend', version: VERSION });

@@ -36,6 +36,60 @@ describe('io, 2025-era connections', () => {
   });
 });
 
+describe('io, secrets in client dialogs', () => {
+  it('a 2025-era client with form dialogs shows the password in the confirmation and the link in its own dialog', async () => {
+    const elicitInput = vi.fn(async () => ({ action: 'accept' }));
+    const io = createIo({ server: serverWith({ elicitation: {} }), ctx: { mcpReq: { elicitInput } }, openBrowser: vi.fn() });
+    expect(io.canShowSecrets).toBe(true);
+    expect(await io.confirm({ recipient: 'a@x.se', name: 'f', sizeBytes: 1, credits: 1, password: 'QWERTYUP23' })).toBe('send');
+    expect(elicitInput.mock.calls[0][0].message).toContain('QWERTYUP23');
+    expect(await io.showLink('https://vitalsend.eu/download/?file=VS11x#k=abc')).toBe('accept');
+    expect(elicitInput.mock.calls[1][0].message).toContain('https://vitalsend.eu/download/?file=VS11x#k=abc');
+  });
+
+  it('other clients cannot show secrets', () => {
+    expect(createIo({ server: serverWith({}), ctx: { mcpReq: {} }, openBrowser: vi.fn() }).canShowSecrets).toBe(false);
+    expect(createIo({ server: serverWith({ elicitation: {} }), ctx: { mcpReq: { envelope: {} } }, openBrowser: vi.fn() }).canShowSecrets).toBe(false);
+  });
+});
+
+describe('io, 2025-era URL login', () => {
+  const loginFake = () => {
+    let resolve;
+    const done = new Promise((r) => { resolve = r; });
+    return { done, resolve, cancel: vi.fn() };
+  };
+  const serverWithNotifier = () => {
+    const sent = [];
+    const s = serverWith({ elicitation: { url: {} } });
+    s.server.createElicitationCompletionNotifier = (id) => async () => { sent.push(id); };
+    return { s, sent };
+  };
+
+  it('does not wait for the dialog, and closes it when the login completes', async () => {
+    const elicitInput = vi.fn(() => new Promise(() => {}));
+    const { s, sent } = serverWithNotifier();
+    const login = loginFake();
+    const io = createIo({ server: s, ctx: { mcpReq: { elicitInput } }, openBrowser: vi.fn() });
+    await io.openLogin('https://vitalsend.eu/oauth/authorize/?x', login);
+    expect(sent).toEqual([]);
+    login.resolve({});
+    await new Promise((r) => setTimeout(r, 0));
+    expect(sent).toEqual([elicitInput.mock.calls[0][0].elicitationId]);
+    expect(login.cancel).not.toHaveBeenCalled();
+  });
+
+  it('a declined dialog cancels the login', async () => {
+    const elicitInput = vi.fn(async () => ({ action: 'decline' }));
+    const { s } = serverWithNotifier();
+    const login = loginFake();
+    const io = createIo({ server: s, ctx: { mcpReq: { elicitInput } }, openBrowser: vi.fn() });
+    await io.openLogin('https://vitalsend.eu/oauth/authorize/?x', login);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(login.cancel).toHaveBeenCalled();
+  });
+});
+
 describe('io, 2026-07-28 connections', () => {
   const ctx2026 = (inputResponses) => ({ mcpReq: { envelope: {}, inputResponses } });
 

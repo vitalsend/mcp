@@ -19,11 +19,19 @@ const base = location.pathname;
 const $ = (id) => document.getElementById(id);
 const post = (action) => fetch(base + '/action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
 const labels = { sms: 'SMS', whatsapp: 'WhatsApp', telegram: 'Telegram', email: 'Email' };
+// Rebuilt only when what it shows changes: a button replaced by the next poll
+// loses a click that is under way.
 function shares(el, item, s) {
+  const key = JSON.stringify([s[item], s.dimmed[item]]);
+  if (el.dataset.key === key) return;
+  el.dataset.key = key;
   el.textContent = '';
   const copy = document.createElement('button');
   copy.textContent = 'Copy';
-  copy.onclick = () => navigator.clipboard?.writeText(item === 'password' ? s.password.value : s.link.value);
+  copy.onclick = () => navigator.clipboard?.writeText(item === 'password' ? s.password.value : s.link.value).then(() => {
+    copy.textContent = '\u2713 Done';
+    setTimeout(() => { copy.textContent = 'Copy'; }, 2000);
+  }, () => {});
   el.append(copy);
   if (navigator.share) {
     const b = document.createElement('button');
@@ -51,8 +59,8 @@ async function tick() {
     $('c-credits').textContent = String(s.confirm.credits);
   }
   // A secret is only in the page while its view is on screen.
-  if (s.view !== 'password') $('p-value').textContent = '';
-  if (s.view !== 'link') $('l-value').textContent = '';
+  if (s.view !== 'password') { $('p-value').textContent = ''; $('p-share').textContent = ''; delete $('p-share').dataset.key; }
+  if (s.view !== 'link') { $('l-value').textContent = ''; $('l-share').textContent = ''; delete $('l-share').dataset.key; }
   if (s.view === 'password') { $('p-value').textContent = s.password.value; shares($('p-share'), 'password', s); }
   if (s.view === 'link') {
     $('l-value').textContent = s.link.value;

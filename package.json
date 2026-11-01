@@ -1,6 +1,6 @@
 {
   "name": "@vitalsend/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Send files end-to-end encrypted through VitalSend from an AI agent. The link key, the password and your login never reach the model.",
   "mcpName": "io.github.vitalsend/mcp",
   "homepage": "https://vitalsend.eu/mcp/",
@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.0",
+    "jsdom": "26.1.0",
     "vitest": "^4.1.8"
   }
 }

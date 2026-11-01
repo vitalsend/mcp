@@ -67,11 +67,13 @@ Ask your agent: "Send `.env` to kalle@example.com with VitalSend."
 The first time, your browser opens on vitalsend.eu: sign in (or create an account) and allow the
 connection. After that:
 
-1. You confirm each send: file, recipient and cost.
-2. A page on your computer shows the password. Send it to the recipient another way than the link,
-   by text message for example.
-3. VitalSend emails the link to the recipient. Without a recipient, the link appears on the same
-   page for you to share.
+1. Your app asks you to confirm each send: file, recipient, cost and the password. Copy the
+   password and send it to the recipient yourself, by text message for example, not by email.
+2. VitalSend emails the link to the recipient. Without a recipient, your app shows you the link to
+   share.
+
+These dialogs go to you, not to the model. An app that cannot show them opens a page on your
+computer for the same steps.
 
 The agent is told who it went to and when it expires. Nothing else.
 
@@ -90,7 +92,9 @@ the folder it was started in, unless that is your home folder or `/`, where it r
 - When VitalSend emails the link, its server handles the link key for that delivery. With a
   password, that key alone does not open the file. To keep VitalSend out entirely, leave out the
   recipient and share the link yourself.
-- The page that shows the password lives on `127.0.0.1` at a random address, answers only the
+- The dialogs that show the password and the link are your app's own; their text and your answer go
+  between the app and this tool, never into the conversation the model reads.
+- The page that shows the password, for apps without such dialogs, lives on `127.0.0.1` at a random address, answers only the
   browser tab that loaded it, and closes afterwards. A program running as you that loads it first
   stops the send. Beyond that, anything running as you can read what you can read.
 - Your login is a send-only grant: it can send files and spend credits, nothing else. Revoke it
